@@ -13,6 +13,19 @@ const client = new Twitter({
     access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET
 });
 
+exports.handler = function (event, context, callback) {
+
+    return Promise.all(QUERIES.map(search)
+        .map(retweet))
+        .catch(function (error) {
+            console.error(error);
+            callback(error, null);
+        })
+        .then(function () {
+            callback(null, null);
+        });
+};
+
 function search(query) {
     return client.get('search/tweets', {q: query, count: 100})
         .then(function (tweets) {
@@ -34,10 +47,3 @@ function retweet(promise) {
         }))
     })
 }
-
-Promise.all(QUERIES.map(search)
-    .map(retweet))
-    .catch(console.error)
-    .then(function () {
-        console.log("done")
-    });
