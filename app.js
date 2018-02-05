@@ -5,6 +5,7 @@ const env = process.env;
 const SINCE_TIME_DURATION = env.SINCE_TIME_DURATION || 1;
 const SINCE_TIME_UNIT = env.SINCE_TIME_UNIT || "hours";
 const QUERIES = env.QUERIES.split(',');
+const SCREEN_NAME_BLACKLIST = (env.SCREEN_NAME_BLACKLIST||"").split(',');
 
 const client = new Twitter({
     consumer_key: process.env.TWITTER_CONSUMER_KEY,
@@ -32,6 +33,8 @@ function search(query) {
             return tweets.statuses.filter(function (tweet) {
                 tweet.created_at = moment(tweet.created_at, "ddd MMM DD HH:mm:ss ZZ YYYY");
                 return tweet.created_at.isAfter(moment().subtract(SINCE_TIME_DURATION, SINCE_TIME_UNIT));
+            }).filter(tweet=>{
+                return !SCREEN_NAME_BLACKLIST.includes(tweet.user.screen_name)
             });
         });
 }
