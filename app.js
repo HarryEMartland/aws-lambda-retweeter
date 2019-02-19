@@ -1,5 +1,6 @@
 const Twitter = require('twitter');
 const moment = require('moment');
+const AWS = require('aws-sdk');
 
 const env = process.env;
 const SINCE_TIME_DURATION = env.SINCE_TIME_DURATION || 1;
@@ -13,6 +14,8 @@ const client = new Twitter({
     access_token_key: process.env.TWITTER_ACCESS_TOKEN_KEY,
     access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET
 });
+
+const comprehend = new AWS.Comprehend();
 
 exports.handler = function (event, context, callback) {
 
@@ -41,12 +44,28 @@ function search(query) {
 
 function retweet(promise) {
     return promise.then(function (tweets) {
-        return Promise.all(tweets.map(function (tweet) {
-            return client.post('statuses/retweet/' + tweet.id_str, {})
-                .then(function () {
-                    console.log(tweet.id_str, tweet.created_at, tweet.text);
-                })
-                .catch(console.error)
-        }))
+
+        if(tweets.length === 0){
+            return Promise.resolve()
+        }
+
+        const params = {LanguageCode: "en", TextList: tweets.map(function(tweet) {
+                return tweet.text;
+            })};
+
+        return comprehend.batchDetectSentiment(params).promise()
+            .then(response => {
+                response.ResultList.forEach(result=>{tweets[result.Index].sentiment = result.Sentiment})
+
+                return Promise.all(tweets.filter(tweet=>tweet.sentiment==='POSITIVE').map(function (tweet) {
+                    return client.post('statuses/retweet/' + tweet.id_str, {})
+                        .then(function () {
+                            console.log(tweet.id_str, tweet.created_at, tweet.text, tweet.sentiment);
+                            console.log(JSON.stringify({tweetCount:1}))
+                        })
+                        .catch(console.error)
+                }))
+            });
+
     })
 }
