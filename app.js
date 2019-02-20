@@ -61,7 +61,7 @@ function retweet(promise) {
                     return client.post('statuses/retweet/' + tweet.id_str, {})
                         .then(function () {
                             console.log(tweet.id_str, tweet.created_at, tweet.text, tweet.sentiment);
-                            console.log(JSON.stringify({tweetCount:1}))
+                            console.log(`{"retweetCount":1}`)
                         })
                         .catch(console.error)
                 }))
