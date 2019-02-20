@@ -6,7 +6,7 @@ const env = process.env;
 const SINCE_TIME_DURATION = env.SINCE_TIME_DURATION || 1;
 const SINCE_TIME_UNIT = env.SINCE_TIME_UNIT || "hours";
 const QUERIES = env.QUERIES.split(',');
-const SCREEN_NAME_BLACKLIST = (env.SCREEN_NAME_BLACKLIST||"").split(',');
+const SCREEN_NAME_BLACKLIST = (env.SCREEN_NAME_BLACKLIST || "").split(',');
 
 const client = new Twitter({
     consumer_key: process.env.TWITTER_CONSUMER_KEY,
@@ -36,7 +36,7 @@ function search(query) {
             return tweets.statuses.filter(function (tweet) {
                 tweet.created_at = moment(tweet.created_at, "ddd MMM DD HH:mm:ss ZZ YYYY");
                 return tweet.created_at.isAfter(moment().subtract(SINCE_TIME_DURATION, SINCE_TIME_UNIT));
-            }).filter(tweet=>{
+            }).filter(tweet => {
                 return !SCREEN_NAME_BLACKLIST.includes(tweet.user.screen_name)
             });
         });
@@ -45,25 +45,32 @@ function search(query) {
 function retweet(promise) {
     return promise.then(function (tweets) {
 
-        if(tweets.length === 0){
+        if (tweets.length === 0) {
             return Promise.resolve()
         }
 
-        const params = {LanguageCode: "en", TextList: tweets.map(function(tweet) {
+        const params = {
+            LanguageCode: "en", TextList: tweets.map(function (tweet) {
                 return tweet.text;
-            })};
+            })
+        };
 
         return comprehend.batchDetectSentiment(params).promise()
             .then(response => {
-                response.ResultList.forEach(result=>{tweets[result.Index].sentiment = result.Sentiment})
+                response.ResultList.forEach(result => {
+                    tweets[result.Index].sentiment = result.Sentiment
+                });
 
-                return Promise.all(tweets.filter(tweet=>tweet.sentiment==='POSITIVE').map(function (tweet) {
+                return Promise.all(tweets.filter(tweet => tweet.sentiment === 'POSITIVE').map(function (tweet) {
                     return client.post('statuses/retweet/' + tweet.id_str, {})
                         .then(function () {
                             console.log(tweet.id_str, tweet.created_at, tweet.text, tweet.sentiment);
                             console.log(`{"retweetCount":1}`)
                         })
-                        .catch(console.error)
+                        .catch((e) => {
+                            console.log(e);
+                            console.log("{retweetErrorCount:1}");
+                        })
                 }))
             });
 
