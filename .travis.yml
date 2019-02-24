@@ -10,7 +10,7 @@ deploy:
   provider: lambda
   function_name: "HarryBotRetweet"
   region: "eu-west-1"
-  role: "arn:aws:iam::818032293643:role/HarryBotRetweet"
+  role: "arn:aws:iam::818032293643:role/lambda-HarryBotRetweet"
   runtime: "nodejs6.10"
   module_name: "app"
   handler_name: "handler"
